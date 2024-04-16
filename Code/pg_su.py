@@ -9,7 +9,8 @@ import pg_network
 import other_agents
 import job_distribution
 
-np.set_printoptions(threshold='nan')
+#np.set_printoptions(threshold='nan')
+np.set_printoptions(threshold=10000)
 
 
 def add_sample(X, y, idx, X_to_add, y_to_add):

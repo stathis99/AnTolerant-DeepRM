@@ -9,6 +9,7 @@ import parameters
 import pg_re
 import pg_su
 import slow_down_cdf
+import anomaly_detection
 
 
 def script_usage():
@@ -152,8 +153,9 @@ def main():
     elif type_exp == 'test':
         # quick_test.launch(pa, pg_resume, render)
         slow_down_cdf.launch(pa, pg_resume, render, True)
-    # elif type_exp == 'q_re':
-    #     q_re.launch(pa, q_resume, render)
+    elif type_exp == 'anomaly_detection':
+        anomaly_detection.launch(pa)
+
     else:
         print("Error: unkown experiment type " + str(type_exp))
         exit(1)
