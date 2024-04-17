@@ -90,15 +90,20 @@ def generate_sequence_work(simu_len):
     nw_len_seq = np.zeros(simu_len, dtype=int)
     nw_size_seq = np.zeros((simu_len, 2), dtype=int)
 
+    time = np.arange(simu_len)
+    arrival_rate = 0.5 + 0.5 * np.sin(2 * np.pi * time / (simu_len / 24))  
+
+
+
     for i in range(simu_len):
 
-        if np.random.rand() < 2:  # a new job comes
+        if np.random.poisson(arrival_rate[i]+1) > 0:  # a new job comes
 
             nw_len_seq[i], nw_size_seq[i, :] = log_norm_dist(2,10,15)
 
     return nw_len_seq, nw_size_seq
 
-def save_jobs_csv(nw_len_seq, nw_size_seq, filename="jobs.csv"):
+def save_jobs_csv(nw_len_seq, nw_size_seq, filename="jobs_lognorm.csv"):
 
     # Combine job length and size information into a single array for easier saving
     data = np.column_stack((nw_len_seq, nw_size_seq))
@@ -114,8 +119,8 @@ def launch(pa):
     print("Anomaly detection !")
     print("Jobs to be generated :", pa.simu_len * pa.num_ex)
     nw_len_seqs, nw_size_seqs = generate_sequence_work(pa.simu_len * pa.num_ex)
-    print(nw_len_seqs)
-    print(nw_size_seqs)
+    # print(nw_len_seqs)
+    # print(nw_size_seqs)
 
     save_jobs_csv(nw_len_seqs, nw_size_seqs)
     print("done !")
