@@ -1,5 +1,6 @@
 import numpy as np
-
+import pandas as pd
+from sklearn.ensemble import IsolationForest
 
 
 def bi_model_dist(num_res, max_nw_size, job_len):
@@ -103,24 +104,48 @@ def generate_sequence_work(simu_len):
 
     return nw_len_seq, nw_size_seq
 
-def save_jobs_csv(nw_len_seq, nw_size_seq, filename="jobs_lognorm.csv"):
+def save_jobs_csv(nw_len_seq, nw_size_seq, filename="jobs_training/jobs_lognorm.csv"):
 
     # Combine job length and size information into a single array for easier saving
     data = np.column_stack((nw_len_seq, nw_size_seq))
 
     # Save the data to a CSV file with headers
-    np.savetxt(filename, data, delimiter=",", header="JobLength,Size1,Size2", fmt="%d")  # Assuming size has 2 dimensions
+    np.savetxt(filename, data, delimiter=",", header="len,res1,res2", fmt="%d")  # Assuming size has 2 dimensions
 
 
 
 
-def launch(pa):
-
-    print("Anomaly detection !")
-    print("Jobs to be generated :", pa.simu_len * pa.num_ex)
-    nw_len_seqs, nw_size_seqs = generate_sequence_work(pa.simu_len * pa.num_ex)
+def launch_generate(train_sample):
+    print("Jobs to be generated :", )
+    nw_len_seqs, nw_size_seqs = generate_sequence_work(train_sample)
     # print(nw_len_seqs)
     # print(nw_size_seqs)
 
     save_jobs_csv(nw_len_seqs, nw_size_seqs)
     print("done !")
+
+def launch_train():
+    print("Train model!")
+    train = pd.read_csv('jobs_training/jobs_lognorm.csv')
+    train_normalized = (train - train.mean()) / train.std()
+    
+    # Initialize and train the Isolation Forest model
+    isolation_forest = IsolationForest(n_estimators=100, max_samples='auto', contamination='auto', random_state=42, behaviour='new')
+    isolation_forest.fit(train_normalized)
+    
+    # Predict outliers/anomalies
+    predictions = isolation_forest.predict(train_normalized)
+    # Create a DataFrame for predictions
+    predictions_df = pd.DataFrame(predictions.reshape(-1, 1), columns=['Prediction'])
+    
+    # Concatenate the predictions DataFrame with the original DataFrame along the appropriate axis
+    train_with_predictions = pd.concat([train, predictions_df], axis=1)
+    
+    # Save the DataFrame with predictions as a new CSV file
+    train_with_predictions.to_csv('jobs_training/jobs_lognorm_with_predictions.csv', index=False)
+    
+    # Count anomalies
+    num_anomalies = sum(predictions == -1)
+    print("Number of anomalies detected:", num_anomalies)
+    print("done !")
+

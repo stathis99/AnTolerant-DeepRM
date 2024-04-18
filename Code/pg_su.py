@@ -153,11 +153,16 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
 
         sys.stdout.flush()
 
-        if epoch % pa.output_freq == 0:
+        # if epoch % pa.output_freq == 0:
 
-            net_file = open(pa.output_filename + '_net_file_' + str(epoch) + '.pkl', 'wb')
-            cPickle.dump(pg_learner.return_net_params(), net_file, -1)
-            net_file.close()
+        #     net_file = open(pa.output_filename + '_net_file_' + str(epoch) + '.pkl', 'wb')
+        #     cPickle.dump(pg_learner.return_net_params(), net_file, -1)
+        #     net_file.close()
+
+    #output model to /data/...pkl
+    net_file = open(pa.output_filename + '_net_file_20' + '.pkl', 'wb')
+    cPickle.dump(pg_learner.return_net_params(), net_file, -1)
+    net_file.close()
 
     print("done")
 

@@ -153,8 +153,11 @@ def main():
     elif type_exp == 'test':
         # quick_test.launch(pa, pg_resume, render)
         slow_down_cdf.launch(pa, pg_resume, render, True)
-    elif type_exp == 'anomaly_detection':
-        anomaly_detection.launch(pa)
+    elif type_exp == 'generate_sample':
+        anomaly_detection.launch_generate(1000)
+    elif type_exp == 'train_model':
+        anomaly_detection.launch_train()
+
 
     else:
         print("Error: unkown experiment type " + str(type_exp))

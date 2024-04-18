@@ -371,20 +371,20 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
         mean_rew_lr_curve.append(np.mean(eprews))
         slow_down_lr_curve.append(np.mean(all_slowdown))
 
-        if iteration % pa.output_freq == 0:
-            param_file = open(pa.output_filename + '_' + str(iteration) + '.pkl', 'wb')
-            cPickle.dump(pg_learners[pa.batch_size].get_params(), param_file, -1)
-            param_file.close()
+        # if iteration % pa.output_freq == 0:
+        #     param_file = open(pa.output_filename + '_' + str(iteration) + '.pkl', 'wb')
+        #     cPickle.dump(pg_learners[pa.batch_size].get_params(), param_file, -1)
+        #     param_file.close()
 
-            pa.unseen = True
-            slow_down_cdf.launch(pa, pa.output_filename + '_' + str(iteration) + '.pkl',
-                                 render=False, plot=True, repre=repre, end=end)
-            pa.unseen = False
-            # test on unseen examples
+        #     pa.unseen = True
+        #     slow_down_cdf.launch(pa, pa.output_filename + '_' + str(iteration) + '.pkl',
+        #                          render=False, plot=True, repre=repre, end=end)
+        #     pa.unseen = False
+        #     # test on unseen examples
 
-            plot_lr_curve(pa.output_filename,
-                          max_rew_lr_curve, mean_rew_lr_curve, slow_down_lr_curve,
-                          ref_discount_rews, ref_slow_down)
+        #     plot_lr_curve(pa.output_filename,
+        #                   max_rew_lr_curve, mean_rew_lr_curve, slow_down_lr_curve,
+        #                   ref_discount_rews, ref_slow_down)
 
 
 def main():
