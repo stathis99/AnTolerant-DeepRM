@@ -3,6 +3,7 @@ import time
 import theano
 import cPickle
 import matplotlib.pyplot as plt
+import job_distribution
 
 import environment
 import pg_network
@@ -160,7 +161,11 @@ def plot_lr_curve(output_file_prefix, max_rew_lr_curve, mean_rew_lr_curve, slow_
 
 def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
 
-    env = environment.Env(pa, render=render, repre=repre, end=end)
+    nw_len_seqs, nw_size_seqs = job_distribution.generate_sequence_work(pa, seed=42)
+
+
+    env = environment.Env(pa, nw_len_seqs=nw_len_seqs, nw_size_seqs=nw_size_seqs,
+                              render=False, repre=repre, end=end)
 
     pg_learner = pg_network.PGLearner(pa)
 
@@ -170,17 +175,19 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
         pg_learner.set_net_params(net_params)
 
     # ----------------------------
-    print("Preparing for data...")
+    #print("Preparing for data...")
     # ----------------------------
 
-    ref_discount_rews, ref_slow_down = slow_down_cdf.launch(pa, pg_resume=None, render=False, plot=False, repre=repre, end=end)
+    # ref_discount_rews, ref_slow_down = slow_down_cdf.launch(pa, pg_resume=None, render=False, plot=False, repre=repre, end=end)
 
     mean_rew_lr_curve = []
     max_rew_lr_curve = []
     slow_down_lr_curve = []
 
     timer_start = time.time()
-
+    # ----------------------------
+    print("Start Training...")
+    # ----------------------------
     for iteration in xrange(pa.num_epochs):
 
         all_ob = []

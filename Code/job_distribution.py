@@ -58,6 +58,35 @@ class Dist:
 
         return nw_len, nw_size
 
+    def bi_model_dist_anomalous(self):
+
+        mu_lenght = 1.5 
+        sigma_lenght = 0.4
+        mu_res = 1.8
+        sigma_res = 0.4 
+        
+        # -- job length --
+        if np.random.rand() < self.job_small_chance:  # small job
+            nw_len = np.random.randint(self.job_len_small_lower,
+                                       self.job_len_small_upper + 1)
+        else:  # big job
+            nw_len = np.random.randint(self.job_len_big_lower,
+                                       self.job_len_big_upper + 1)
+
+        nw_size = np.zeros(self.num_res)
+
+        # -- job resource request --
+        dominant_res = np.random.randint(0, self.num_res)
+        for i in range(self.num_res):
+            if i == dominant_res:
+                nw_size[i] = np.round(np.random.lognormal(mu_res, sigma_res, 1)).astype(int)
+
+            else:
+                nw_size[i] = np.round(np.random.lognormal(mu_res, sigma_res, 1)).astype(int)
+
+        return nw_len, nw_size    
+
+
 
 def generate_sequence_work(pa, seed=42):
 
@@ -65,7 +94,9 @@ def generate_sequence_work(pa, seed=42):
 
     simu_len = pa.simu_len * pa.num_ex
 
-    nw_dist = pa.dist.bi_model_dist
+    nw_dist = pa.dist.bi_model_dist_anomalous
+
+
 
     nw_len_seq = np.zeros(simu_len, dtype=int)
     nw_size_seq = np.zeros((simu_len, pa.num_res), dtype=int)
@@ -80,5 +111,9 @@ def generate_sequence_work(pa, seed=42):
                             [pa.num_ex, pa.simu_len])
     nw_size_seq = np.reshape(nw_size_seq,
                              [pa.num_ex, pa.simu_len, pa.num_res])
+    
+    #print nw_len_seq
+    #print nw_size_seq
+
 
     return nw_len_seq, nw_size_seq

@@ -84,13 +84,19 @@ class Env:
 
             ir_pt = 0
 
+            print '------------------',self.curr_time
+            
+            for x in xrange(self.pa.num_nw):
+                if self.job_slot.slot[x] is not None:
+                    print 'len ',self.job_slot.slot[x].len
+                    print 'res ',self.job_slot.slot[x].res_vec
+
             for i in xrange(self.pa.num_res):
 
                 image_repr[:, ir_pt: ir_pt + self.pa.res_slot] = self.machine.canvas[i, :, :]
                 ir_pt += self.pa.res_slot
 
                 for j in xrange(self.pa.num_nw):
-
                     if self.job_slot.slot[j] is not None:  # fill in a block of work
                         image_repr[: self.job_slot.slot[j].len, ir_pt: ir_pt + self.job_slot.slot[j].res_vec[i]] = 1
 
@@ -240,6 +246,7 @@ class Env:
         else:
             allocated = self.machine.allocate_job(self.job_slot.slot[a], self.curr_time)
             if not allocated:  # implicit void action
+                #print 'cound not allocate job ',self.job_slot.slot[a].len, self.job_slot.slot[a].res_vec
                 status = 'MoveOn'
             else:
                 status = 'Allocate'
@@ -268,6 +275,12 @@ class Env:
 
                 if self.seq_idx < self.pa.simu_len:  # otherwise, end of new job sequence, i.e. no new jobs
                     new_job = self.get_new_job_from_seq(self.seq_no, self.seq_idx)
+
+                    # print 'curr time : ', self.curr_time
+                    # print 'new job id = ',new_job.id
+                    # print 'new job len = ',new_job.len
+                    # print 'new job len =  ',new_job.res_vec
+                    
 
                     if new_job.len > 0:  # a new job comes
 

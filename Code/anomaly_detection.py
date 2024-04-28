@@ -47,22 +47,6 @@ def bi_model_dist(num_res, max_nw_size, job_len):
 
 def log_norm_dist(num_res, max_nw_size, job_len):
     num_res = num_res
-    max_nw_size = max_nw_size
-    job_len = job_len
-
-    job_small_chance = 0.8
-
-    job_len_big_lower = job_len * 2 / 3
-    job_len_big_upper = job_len
-
-    job_len_small_lower = 1
-    job_len_small_upper = job_len / 5
-
-    dominant_res_lower = max_nw_size / 2
-    dominant_res_upper = max_nw_size
-
-    other_res_lower = 1
-    other_res_upper = max_nw_size / 5
 
     mu_lenght = 2  
     sigma_lenght = 0.5
