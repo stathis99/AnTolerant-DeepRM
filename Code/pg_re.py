@@ -65,6 +65,7 @@ def get_traj(agent, env, episode_max_length):
     rews = []
     entropy = []
     info = []
+    costs = []
 
     ob = env.observe()
 
@@ -76,9 +77,11 @@ def get_traj(agent, env, episode_max_length):
         obs.append(ob)  # store the ob at current decision making step
         acts.append(a)
 
-        ob, rew, done, info = env.step(a, repeat=True)
+        ob, rew, done, info, cost = env.step(a, repeat=True)
 
         rews.append(rew)
+        costs.append(cost)
+
         entropy.append(get_entropy(act_prob))
 
         if done: break
@@ -87,7 +90,8 @@ def get_traj(agent, env, episode_max_length):
             'ob': np.array(obs),
             'action': np.array(acts),
             'entropy': entropy,
-            'info': info
+            'info': info,
+            'cost':np.array(costs)
             }
 
 
@@ -190,6 +194,17 @@ def get_traj_worker(pg_learner, env, pa, result):
 
     all_ob = concatenate_all_ob(trajs, pa)
 
+
+    array_averages_cost = []
+    # Calculate the average for each array in trajs
+    for traj in trajs:
+        array_avg = sum(traj["cost"])
+        array_averages_cost.append(array_avg)
+
+
+    # Calculate the average of all the array averages
+    overall_avg_cost = sum(array_averages_cost) / len(array_averages_cost)
+
     # Compute discounted sums of rewards
     rets = [discount(traj["reward"], pa.discount) for traj in trajs]
     maxlen = max(len(ret) for ret in rets)
@@ -219,7 +234,9 @@ def get_traj_worker(pg_learner, env, pa, result):
                    "all_eprews": all_eprews,
                    "all_eplens": all_eplens,
                    "all_slowdown": all_slowdown,
-                   "all_entropy": all_entropy})
+                   "all_entropy": all_entropy,
+                   "avg_cost": overall_avg_cost
+                   })
 
 
 def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
@@ -264,7 +281,7 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
     print("Preparing for reference data...")
     # --------------------------------------
 
-    ref_discount_rews, ref_slow_down = slow_down_cdf.launch(pa, pg_resume=None, render=False, plot=False, repre=repre, end=end)
+    #ref_discount_rews, ref_slow_down = slow_down_cdf.launch(pa, pg_resume=None, render=False, plot=False, repre=repre, end=end)
     mean_rew_lr_curve = []
     max_rew_lr_curve = []
     slow_down_lr_curve = []
@@ -291,6 +308,7 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
         eplens = []
         all_slowdown = []
         all_entropy = []
+        all_avg_cost = []
 
         ex_counter = 0
         for ex in xrange(pa.num_ex):
@@ -339,6 +357,9 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
                 all_slowdown.extend(np.concatenate([r["all_slowdown"] for r in result]))
                 all_entropy.extend(np.concatenate([r["all_entropy"] for r in result]))
 
+                all_costs = np.mean(r["avg_cost"])
+                all_avg_cost.append(all_costs)
+
         # assemble gradients
         grads = grads_all[0]
         for i in xrange(1, len(grads_all)):
@@ -366,6 +387,7 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
         print "MeanLen: \t %s +- %s" % (np.mean(eplens), np.std(eplens))
         print "MeanEntropy \t %s" % (np.mean(all_entropy))
         print "Elapsed time\t %s" % (timer_end - timer_start), "seconds"
+        print "MeanCost \t %s" % (np.mean(all_avg_cost))
         print "-----------------"
 
         timer_start = time.time()

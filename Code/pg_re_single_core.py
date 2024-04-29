@@ -51,6 +51,8 @@ def get_traj(agent, env, episode_max_length, render=False):
         csprob_n = np.cumsum(act_prob)
         a = (csprob_n > np.random.rand()).argmax()
 
+        #print 'action : ', a
+
         obs.append(ob)  # store the ob at current decision making step
         acts.append(a)
 

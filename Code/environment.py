@@ -54,6 +54,8 @@ class Env:
         self.job_backlog = JobBacklog(pa)
         self.job_record = JobRecord()
         self.extra_info = ExtraInfo(pa)
+        # scaled system
+        self.machine_scaled = Machine_scaled(pa)
 
     def generate_sequence_work(self, simu_len):
 
@@ -84,12 +86,17 @@ class Env:
 
             ir_pt = 0
 
-            print '------------------',self.curr_time
+            # print job que for every iteration
+            # print '------------------',self.curr_time
             
-            for x in xrange(self.pa.num_nw):
-                if self.job_slot.slot[x] is not None:
-                    print 'len ',self.job_slot.slot[x].len
-                    print 'res ',self.job_slot.slot[x].res_vec
+            # for x in xrange(self.pa.num_nw):
+            #     if self.job_slot.slot[x] is not None:
+            #         print 'len ',self.job_slot.slot[x].len
+            #         print 'res ',self.job_slot.slot[x].res_vec
+
+            # print 'jobs in Machine 1 : ', len(self.machine.running_job)
+            # print 'jobs in Machine scaled : ', len(self.machine_scaled.running_job)
+
 
             for i in xrange(self.pa.num_res):
 
@@ -221,6 +228,11 @@ class Env:
         for j in self.machine.running_job:
             reward += self.pa.delay_penalty / float(j.len)
 
+        for j in self.machine_scaled.running_job:
+            reward += self.pa.delay_penalty / float(j.len)
+            #reward += self.pa.scale_penalty
+
+
         for j in self.job_slot.slot:
             if j is not None:
                 reward += self.pa.hold_penalty / float(j.len)
@@ -230,6 +242,10 @@ class Env:
                 reward += self.pa.dismiss_penalty / float(j.len)
 
         return reward
+    
+    def get_cost(self):
+
+        return len(self.machine_scaled.running_job)
 
     def step(self, a, repeat=False):
 
@@ -237,23 +253,38 @@ class Env:
 
         done = False
         reward = 0
+        cost = 0
         info = None
 
-        if a == self.pa.num_nw:  # explicit void action
-            status = 'MoveOn'
-        elif self.job_slot.slot[a] is None:  # implicit void action
-            status = 'MoveOn'
-        else:
-            allocated = self.machine.allocate_job(self.job_slot.slot[a], self.curr_time)
-            if not allocated:  # implicit void action
-                #print 'cound not allocate job ',self.job_slot.slot[a].len, self.job_slot.slot[a].res_vec
+        if a <= self.pa.num_nw:
+            if a == self.pa.num_nw:  # explicit void action
+                status = 'MoveOn'
+            elif self.job_slot.slot[a] is None:  # implicit void action
                 status = 'MoveOn'
             else:
-                status = 'Allocate'
+                allocated = self.machine.allocate_job(self.job_slot.slot[a], self.curr_time)
+                if not allocated:  # implicit void action
+                    #print 'cound not allocate job ',self.job_slot.slot[a].len, self.job_slot.slot[a].res_vec
+                    status = 'MoveOn'
+                else:
+                    status = 'Allocate'
+        else:
+            a = a - self.pa.num_nw - 1
+            if self.job_slot.slot[a] is None:
+                status = 'MoveOn'
+            else:
+                allocated = self.machine_scaled.allocate_job(self.job_slot.slot[a], self.curr_time)
+                if not allocated:  # implicit void action
+                    #print 'cound not allocate job ',self.job_slot.slot[a].len, self.job_slot.slot[a].res_vec
+                    status = 'MoveOn'
+                else:
+                    status = 'Allocate_Scaled'
+
 
         if status == 'MoveOn':
             self.curr_time += 1
             self.machine.time_proceed(self.curr_time)
+            self.machine_scaled.time_proceed(self.curr_time)
             self.extra_info.time_proceed()
 
             # add new jobs
@@ -304,6 +335,7 @@ class Env:
                         self.extra_info.new_job_comes()
 
             reward = self.get_reward()
+            cost = self.get_cost()
 
         elif status == 'Allocate':
             self.job_record.record[self.job_slot.slot[a].id] = self.job_slot.slot[a]
@@ -315,6 +347,10 @@ class Env:
                 self.job_backlog.backlog[: -1] = self.job_backlog.backlog[1:]
                 self.job_backlog.backlog[-1] = None
                 self.job_backlog.curr_size -= 1
+
+        elif status == 'Allocate_Scaled':
+            #self.job_record.record[self.job_slot.slot[a].id] = self.job_slot.slot[a]
+            self.job_slot.slot[a] = None
 
         ob = self.observe()
 
@@ -331,7 +367,7 @@ class Env:
         if self.render:
             self.plot_state()
 
-        return ob, reward, done, info
+        return ob, reward, done, info , cost
 
     def reset(self):
         self.seq_idx = 0
@@ -343,6 +379,8 @@ class Env:
         self.job_backlog = JobBacklog(self.pa)
         self.job_record = JobRecord()
         self.extra_info = ExtraInfo(self.pa)
+
+        self.machine_scaled = Machine_scaled(self.pa)
 
 
 class Job:
@@ -445,6 +483,80 @@ class Machine:
         self.canvas[:, :-1, :] = self.canvas[:, 1:, :]
         self.canvas[:, -1, :] = 0
 
+class Machine_scaled:
+    def __init__(self, pa):
+        self.num_res = pa.num_res
+        self.time_horizon = pa.time_horizon
+        self.res_slot = pa.res_slot_scaled
+
+        self.avbl_slot = np.ones((self.time_horizon, self.num_res)) * self.res_slot
+
+        self.running_job = []
+
+        # colormap for graphical representation
+        self.colormap = np.arange(1 / float(pa.job_num_cap), 1, 1 / float(pa.job_num_cap))
+        np.random.shuffle(self.colormap)
+
+        # graphical representation
+        self.canvas = np.zeros((pa.num_res, pa.time_horizon, pa.res_slot))
+
+    
+    def allocate_job(self, job, curr_time):
+
+        allocated = False
+
+        for t in xrange(0, self.time_horizon - job.len):
+
+            new_avbl_res = self.avbl_slot[t: t + job.len, :] - job.res_vec
+
+            if np.all(new_avbl_res[:] >= 0):
+
+                allocated = True
+
+                self.avbl_slot[t: t + job.len, :] = new_avbl_res
+                job.start_time = curr_time + t
+                job.finish_time = job.start_time + job.len
+
+                self.running_job.append(job)
+
+                # update graphical representation
+
+                used_color = np.unique(self.canvas[:])
+                # WARNING: there should be enough colors in the color map
+                for color in self.colormap:
+                    if color not in used_color:
+                        new_color = color
+                        break
+
+                assert job.start_time != -1
+                assert job.finish_time != -1
+                assert job.finish_time > job.start_time
+                canvas_start_time = job.start_time - curr_time
+                canvas_end_time = job.finish_time - curr_time
+
+                for res in xrange(self.num_res):
+                    for i in range(canvas_start_time, canvas_end_time):
+                        avbl_slot = np.where(self.canvas[res, i, :] == 0)[0]
+                        self.canvas[res, i, avbl_slot[: job.res_vec[res]]] = new_color
+
+                break
+
+        return allocated
+
+    def time_proceed(self, curr_time):
+
+        self.avbl_slot[:-1, :] = self.avbl_slot[1:, :]
+        self.avbl_slot[-1, :] = self.res_slot
+
+        for job in self.running_job:
+
+            if job.finish_time <= curr_time:
+                self.running_job.remove(job)
+
+        # update graphical representation
+
+        self.canvas[:, :-1, :] = self.canvas[:, 1:, :]
+        self.canvas[:, -1, :] = 0
 
 class ExtraInfo:
     def __init__(self, pa):
