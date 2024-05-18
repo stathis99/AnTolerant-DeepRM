@@ -9,7 +9,7 @@ class Parameters:
 
         self.output_filename = 'data/tmp'
 
-        self.num_epochs = 50 #10000         # number of training epochs
+        self.num_epochs = 150 #10000         # number of training epochs
         self.simu_len = 10             # length of the busy cycle that repeats itself
         self.num_ex = 1                # number of sequences
 
@@ -63,7 +63,7 @@ class Parameters:
         self.delay_penalty = -1       # penalty for delaying things in the current work screen
         self.hold_penalty = -1        # penalty for holding things in the new work screen
         self.dismiss_penalty = -1     # penalty for missing a job because the queue is full
-        self.scale_penalty = -5      # penalty for using scaled
+        self.scale_penalty = -10      # penalty for using scaled
 
         self.num_frames = 1           # number of frames to combine and process
         self.lr_rate = 0.001          # learning rate

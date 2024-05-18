@@ -525,7 +525,7 @@ class Machine_scaled:
 
                 self.avbl_slot[t: t + job.len, :] = new_avbl_res
                 job.start_time = curr_time + t
-                job.finish_time = job.start_time + job.len + 1 #network slowdown
+                job.finish_time = job.start_time + job.len #network slowdown
 
                 self.running_job.append(job)
 

@@ -204,6 +204,20 @@ def calculate_percentages_machines(array):
 
     return percent_1
 
+    
+def calculate_percentages_anomalous_cloud(data):
+    count = 0
+    count_an = 0
+    for item in data:
+        if item[0] == 1:
+            count += 1
+        if max(item[1]) > 10:
+            count_an += 1
+    if count > 0:
+        return(count_an / float(count)) * 100
+    else:
+        return None  # No qualifying elements found
+
 
 def get_traj_worker(pg_learner, env, pa, result):
 
@@ -223,9 +237,11 @@ def get_traj_worker(pg_learner, env, pa, result):
         array_averages_cost.append(array_avg)
 
     array_average_cloud_usage = []
+    array_average_anomalous_jobs_in_cloud = []
     for traj in trajs: 
         array_average_cloud_usage.append(calculate_percentages_machines(traj["allocated_jobs"]))
-         
+        array_average_anomalous_jobs_in_cloud.append(calculate_percentages_anomalous_cloud(traj["allocated_jobs"]))
+        
 
 
     # Calculate the average of all the array averages
@@ -233,6 +249,8 @@ def get_traj_worker(pg_learner, env, pa, result):
 
     # Calculate the average of all the array averages
     overall_avg_cloud_usage = sum(array_average_cloud_usage) / len(array_average_cloud_usage)
+
+    overall_avg_cloud_anomalous = sum(array_average_anomalous_jobs_in_cloud) / len(array_average_anomalous_jobs_in_cloud)
 
     # Compute discounted sums of rewards
     rets = [discount(traj["reward"], pa.discount) for traj in trajs]
@@ -266,6 +284,7 @@ def get_traj_worker(pg_learner, env, pa, result):
                    "all_entropy": all_entropy,
                    "avg_cost": overall_avg_cost,
                    "avg_cloud_usage": overall_avg_cloud_usage,
+                   "avg_anomalous_cloud": overall_avg_cloud_anomalous,
                    })
 
 
@@ -340,6 +359,8 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
         all_slowdown = []
         all_entropy = []
         all_avg_cost = []
+        all_avg_cloud_usage = []
+        all_avg_anom_cloud = []
 
         ex_counter = 0
         for ex in xrange(pa.num_ex):
@@ -392,7 +413,8 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
                 all_avg_cost.append(all_costs)
 
                 all_cloud_usage = np.mean(r["avg_cloud_usage"])
-                print all_cloud_usage
+
+                all_anom_cloud = np.mean(r["avg_anomalous_cloud"])
 
         # assemble gradients
         grads = grads_all[0]
@@ -423,6 +445,7 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
         print "Elapsed time\t %s" % (timer_end - timer_start), "seconds"
         print "MeanCost \t %s" % (np.mean(all_avg_cost))
         print "Avg cloud usage \t %s" % (all_cloud_usage)
+        print "Avg anom in cloud \t %s" % (all_anom_cloud)
         print "-----------------"
 
         timer_start = time.time()
@@ -431,6 +454,9 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
         mean_rew_lr_curve.append(np.mean(eprews))
         slow_down_lr_curve.append(np.mean(all_slowdown))
         cost_data.append(np.mean(all_avg_cost))
+        all_avg_cloud_usage.append(all_cloud_usage)
+        all_avg_anom_cloud.append(all_anom_cloud)
+
 
         # save all in last iteration
         if iteration == pa.num_epochs-1:
@@ -455,6 +481,25 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
             # Create DataFrame for cost_data and save to CSV
             df_cost = pd.DataFrame(cost_data, columns=['cost_data'])
             df_cost.to_csv('data/cost_data.csv', index=False)
+
+
+            # Create DataFrame for cost_data and save to CSV
+            df_mean_rw = pd.DataFrame(mean_rew_lr_curve, columns=['mean_rew_lr_curve'])
+            df_mean_rw.to_csv('data/mean_rew_lr_curve.csv', index=False)
+
+            # Create DataFrame for cost_data and save to CSV
+            df_max_rew = pd.DataFrame(max_rew_lr_curve, columns=['max_rew_lr_curve'])
+            df_max_rew.to_csv('data/max_rew_lr_curve.csv', index=False)
+
+            df_cloud_use = pd.DataFrame(all_avg_cloud_usage, columns=['all_avg_cloud_usage'])
+            df_cloud_use.to_csv('data/all_avg_cloud_usage.csv', index=False)
+
+            df_anom = pd.DataFrame(all_avg_anom_cloud, columns=['all_avg_anom_cloud'])
+            df_anom.to_csv('data/all_avg_anom_cloud.csv', index=False)
+
+
+
+
 
 
 def main():
