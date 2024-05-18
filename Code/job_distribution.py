@@ -62,7 +62,7 @@ class Dist:
 
         mu_lenght = 1.5 
         sigma_lenght = 0.4
-        mu_res = 1.8
+        mu_res = 1.9
         sigma_res = 0.4 
         
         # -- job length --

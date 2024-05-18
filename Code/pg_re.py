@@ -4,6 +4,7 @@ import numpy as np
 import theano
 import cPickle
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from multiprocessing import Process
 from multiprocessing import Manager
@@ -66,6 +67,7 @@ def get_traj(agent, env, episode_max_length):
     entropy = []
     info = []
     costs = []
+    allocated_jobs = []
 
     ob = env.observe()
 
@@ -77,7 +79,11 @@ def get_traj(agent, env, episode_max_length):
         obs.append(ob)  # store the ob at current decision making step
         acts.append(a)
 
-        ob, rew, done, info, cost = env.step(a, repeat=True)
+        ob, rew, done, info, cost, alloc_job = env.step(a, repeat=True)
+
+        if len(alloc_job) > 0:
+            allocated_jobs.append(alloc_job)
+
 
         rews.append(rew)
         costs.append(cost)
@@ -85,13 +91,15 @@ def get_traj(agent, env, episode_max_length):
         entropy.append(get_entropy(act_prob))
 
         if done: break
+    
 
     return {'reward': np.array(rews),
             'ob': np.array(obs),
             'action': np.array(acts),
             'entropy': entropy,
             'info': info,
-            'cost':np.array(costs)
+            'cost':np.array(costs),
+            'allocated_jobs': np.array(allocated_jobs)
             }
 
 
@@ -183,6 +191,19 @@ def plot_lr_curve(output_file_prefix, max_rew_lr_curve, mean_rew_lr_curve, slow_
 
     plt.savefig(output_file_prefix + "_lr_curve" + ".pdf")
 
+def calculate_percentages_machines(array):
+    # Extract the first column and convert to int
+    first_column = array[:, 0].astype(int)
+    total = len(first_column)
+    
+
+    # Count occurrences of 0 and 1
+    count_1 = np.sum(first_column == 1)
+ 
+    percent_1 = (count_1 / float(total)) * 100
+
+    return percent_1
+
 
 def get_traj_worker(pg_learner, env, pa, result):
 
@@ -201,9 +222,17 @@ def get_traj_worker(pg_learner, env, pa, result):
         array_avg = sum(traj["cost"])
         array_averages_cost.append(array_avg)
 
+    array_average_cloud_usage = []
+    for traj in trajs: 
+        array_average_cloud_usage.append(calculate_percentages_machines(traj["allocated_jobs"]))
+         
+
 
     # Calculate the average of all the array averages
     overall_avg_cost = sum(array_averages_cost) / len(array_averages_cost)
+
+    # Calculate the average of all the array averages
+    overall_avg_cloud_usage = sum(array_average_cloud_usage) / len(array_average_cloud_usage)
 
     # Compute discounted sums of rewards
     rets = [discount(traj["reward"], pa.discount) for traj in trajs]
@@ -235,7 +264,8 @@ def get_traj_worker(pg_learner, env, pa, result):
                    "all_eplens": all_eplens,
                    "all_slowdown": all_slowdown,
                    "all_entropy": all_entropy,
-                   "avg_cost": overall_avg_cost
+                   "avg_cost": overall_avg_cost,
+                   "avg_cloud_usage": overall_avg_cloud_usage,
                    })
 
 
@@ -285,6 +315,7 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
     mean_rew_lr_curve = []
     max_rew_lr_curve = []
     slow_down_lr_curve = []
+    cost_data = []
 
     # --------------------------------------
     print("Start training...")
@@ -360,6 +391,9 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
                 all_costs = np.mean(r["avg_cost"])
                 all_avg_cost.append(all_costs)
 
+                all_cloud_usage = np.mean(r["avg_cloud_usage"])
+                print all_cloud_usage
+
         # assemble gradients
         grads = grads_all[0]
         for i in xrange(1, len(grads_all)):
@@ -388,6 +422,7 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
         print "MeanEntropy \t %s" % (np.mean(all_entropy))
         print "Elapsed time\t %s" % (timer_end - timer_start), "seconds"
         print "MeanCost \t %s" % (np.mean(all_avg_cost))
+        print "Avg cloud usage \t %s" % (all_cloud_usage)
         print "-----------------"
 
         timer_start = time.time()
@@ -395,22 +430,31 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
         max_rew_lr_curve.append(np.average([np.max(rew) for rew in all_eprews]))
         mean_rew_lr_curve.append(np.mean(eprews))
         slow_down_lr_curve.append(np.mean(all_slowdown))
+        cost_data.append(np.mean(all_avg_cost))
 
         # save all in last iteration
         if iteration == pa.num_epochs-1:
-            param_file = open(pa.output_filename + '_' + str(iteration) + '.pkl', 'wb')
-            cPickle.dump(pg_learners[pa.batch_size].get_params(), param_file, -1)
-            param_file.close()
+            # param_file = open(pa.output_filename + '_' + str(iteration) + '.pkl', 'wb')
+            # cPickle.dump(pg_learners[pa.batch_size].get_params(), param_file, -1)
+            # param_file.close()
 
-            pa.unseen = True
-            slow_down_cdf.launch(pa, pa.output_filename + '_' + str(iteration) + '.pkl',
-                                 render=False, plot=True, repre=repre, end=end)
-            pa.unseen = False
-            # test on unseen examples
+            # pa.unseen = True
+            # slow_down_cdf.launch(pa, pa.output_filename + '_' + str(iteration) + '.pkl',
+            #                      render=False, plot=True, repre=repre, end=end)
+            # pa.unseen = False
+            # # test on unseen examples
 
-            plot_lr_curve(pa.output_filename,
-                          max_rew_lr_curve, mean_rew_lr_curve, slow_down_lr_curve,
-                          ref_discount_rews, ref_slow_down)
+            # plot_lr_curve(pa.output_filename,
+            #               max_rew_lr_curve, mean_rew_lr_curve, slow_down_lr_curve,
+            #               ref_discount_rews, ref_slow_down)
+            
+            # Create DataFrame for slow_down_lr_curve and save to CSV
+            df_slow_down = pd.DataFrame(slow_down_lr_curve, columns=['slow_down_lr_curve'])
+            df_slow_down.to_csv('data/slow_down_lr_curve.csv', index=False)
+
+            # Create DataFrame for cost_data and save to CSV
+            df_cost = pd.DataFrame(cost_data, columns=['cost_data'])
+            df_cost.to_csv('data/cost_data.csv', index=False)
 
 
 def main():

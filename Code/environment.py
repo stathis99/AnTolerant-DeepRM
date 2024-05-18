@@ -230,7 +230,7 @@ class Env:
 
         for j in self.machine_scaled.running_job:
             reward += self.pa.delay_penalty / float(j.len)
-            #reward += self.pa.scale_penalty
+            reward += self.pa.scale_penalty
 
 
         for j in self.job_slot.slot:
@@ -255,6 +255,7 @@ class Env:
         reward = 0
         cost = 0
         info = None
+        allocted_job = []
 
         if a <= self.pa.num_nw:
             if a == self.pa.num_nw:  # explicit void action
@@ -263,22 +264,31 @@ class Env:
                 status = 'MoveOn'
             else:
                 allocated = self.machine.allocate_job(self.job_slot.slot[a], self.curr_time)
+                job = self.job_slot.slot[a]
                 if not allocated:  # implicit void action
                     #print 'cound not allocate job ',self.job_slot.slot[a].len, self.job_slot.slot[a].res_vec
                     status = 'MoveOn'
                 else:
                     status = 'Allocate'
+                    allocted_job.append(0)
+                    allocted_job.append(job.res_vec)
+                    allocted_job.append(job.len)
         else:
             a = a - self.pa.num_nw - 1
             if self.job_slot.slot[a] is None:
                 status = 'MoveOn'
             else:
                 allocated = self.machine_scaled.allocate_job(self.job_slot.slot[a], self.curr_time)
+                job = self.job_slot.slot[a]
+
                 if not allocated:  # implicit void action
                     #print 'cound not allocate job ',self.job_slot.slot[a].len, self.job_slot.slot[a].res_vec
                     status = 'MoveOn'
                 else:
                     status = 'Allocate_Scaled'
+                    allocted_job.append(1)
+                    allocted_job.append(job.res_vec)
+                    allocted_job.append(job.len)
 
 
         if status == 'MoveOn':
@@ -367,7 +377,7 @@ class Env:
         if self.render:
             self.plot_state()
 
-        return ob, reward, done, info , cost
+        return ob, reward, done, info , cost, allocted_job
 
     def reset(self):
         self.seq_idx = 0
