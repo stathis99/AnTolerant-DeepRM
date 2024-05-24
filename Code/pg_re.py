@@ -335,6 +335,8 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
     max_rew_lr_curve = []
     slow_down_lr_curve = []
     cost_data = []
+    all_avg_cloud_usage = []
+    all_avg_anom_cloud = []
 
     # --------------------------------------
     print("Start training...")
@@ -359,8 +361,7 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
         all_slowdown = []
         all_entropy = []
         all_avg_cost = []
-        all_avg_cloud_usage = []
-        all_avg_anom_cloud = []
+
 
         ex_counter = 0
         for ex in xrange(pa.num_ex):
