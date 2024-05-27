@@ -1,0 +1,2 @@
+1. change in paramters.py th output and compute_dependent_parameters(self):
+2. change get_reward()

@@ -245,13 +245,21 @@ def get_traj_worker(pg_learner, env, pa, result):
 
 
     # Calculate the average of all the array averages
-    overall_avg_cost = sum(array_averages_cost) / len(array_averages_cost)
+    if len(array_averages_cost) != 0:
+        overall_avg_cost = sum(array_averages_cost) / len(array_averages_cost)
+    else:
+        overall_avg_cost = 0
 
     # Calculate the average of all the array averages
-    overall_avg_cloud_usage = sum(array_average_cloud_usage) / len(array_average_cloud_usage)
+    if len(array_averages_cost) != 0:
+        overall_avg_cloud_usage = sum(array_average_cloud_usage) / len(array_average_cloud_usage)
+    else:
+        overall_avg_cloud_usage = 0
 
-    overall_avg_cloud_anomalous = sum(array_average_anomalous_jobs_in_cloud) / len(array_average_anomalous_jobs_in_cloud)
-
+    if array_average_anomalous_jobs_in_cloud != 0:
+        overall_avg_cloud_anomalous = sum(array_average_anomalous_jobs_in_cloud) / len(array_average_anomalous_jobs_in_cloud)
+    else:
+        overall_avg_cloud_anomalous
     # Compute discounted sums of rewards
     rets = [discount(traj["reward"], pa.discount) for traj in trajs]
     maxlen = max(len(ret) for ret in rets)

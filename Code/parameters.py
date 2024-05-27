@@ -9,7 +9,7 @@ class Parameters:
 
         self.output_filename = 'data/tmp'
 
-        self.num_epochs = 150 #10000         # number of training epochs
+        self.num_epochs = 100 #10000         # number of training epochs
         self.simu_len = 10             # length of the busy cycle that repeats itself
         self.num_ex = 1                # number of sequences
 
@@ -54,11 +54,12 @@ class Parameters:
         # compact representation
         self.network_compact_dim = (self.num_res + 1) * \
             (self.time_horizon + self.num_nw) + 1  # + 1 for backlog indicator
+        
+        #DeepRM
+        self.network_output_dim = self.num_nw + 1  # + 1 for void action
+        #DeepRM scaled
+        #self.network_output_dim = self.num_nw * 2 + 1  # 5 slots * 2 (Machine +scaled) + 1 for void action
 
-        #self.network_output_dim = self.num_nw + 1  # + 1 for void action
-        self.network_output_dim = self.num_nw * 2 + 1  # 5 slots * 2 (Machine +scaled) + 1 for void action
-
-        print self.network_output_dim
 
         self.delay_penalty = -1       # penalty for delaying things in the current work screen
         self.hold_penalty = -1        # penalty for holding things in the new work screen
@@ -90,5 +91,7 @@ class Parameters:
         self.network_compact_dim = (self.num_res + 1) * \
             (self.time_horizon + self.num_nw) + 1  # + 1 for backlog indicator
 
-        self.network_output_dim = self.num_nw * 2 + 1  # + 1 for void action
+        #Deep_rm_cloud
+        #self.network_output_dim = self.num_nw * 2 + 1  # + 1 for void action
+        self.network_output_dim = self.num_nw + 1  # + 1 for void action
 

@@ -228,9 +228,10 @@ class Env:
         for j in self.machine.running_job:
             reward += self.pa.delay_penalty / float(j.len)
 
-        for j in self.machine_scaled.running_job:
-            reward += self.pa.delay_penalty / float(j.len)
-            reward += self.pa.scale_penalty
+        # Deep_rm cloud
+        # for j in self.machine_scaled.running_job:
+        #     reward += self.pa.delay_penalty / float(j.len)
+        #     reward += self.pa.scale_penalty
 
 
         for j in self.job_slot.slot:
@@ -256,6 +257,7 @@ class Env:
         cost = 0
         info = None
         allocted_job = []
+
 
         if a <= self.pa.num_nw:
             if a == self.pa.num_nw:  # explicit void action
