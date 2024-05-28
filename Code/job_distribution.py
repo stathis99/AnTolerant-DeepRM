@@ -67,7 +67,7 @@ class Dist:
         mu_res = 1.5
 
         #no anomalies
-        sigma_res = 0.2 
+        sigma_res = 0.6 
 
         #mid anomalies
         #sigma_res = 0.5 
