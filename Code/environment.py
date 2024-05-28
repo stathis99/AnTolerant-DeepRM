@@ -327,6 +327,8 @@ class Env:
 
                     if new_job.len > 0:  # a new job comes
 
+
+
                         to_backlog = True
                         for i in xrange(self.pa.num_nw):
                             if self.job_slot.slot[i] is None:  # put in new visible job slots
@@ -371,6 +373,7 @@ class Env:
         if done:
             self.seq_idx = 0
 
+
             if not repeat:
                 self.seq_no = (self.seq_no + 1) % self.pa.num_ex
 
@@ -379,7 +382,14 @@ class Env:
         if self.render:
             self.plot_state()
 
-        return ob, reward, done, info , cost, allocted_job
+        #count all jobs in backlog and jobslot
+        not_exe_jobs = 0
+        for slot in self.job_slot.slot:
+            if slot != None:
+                not_exe_jobs += 1
+        not_exe_jobs += self.job_backlog.curr_size 
+
+        return ob, reward, done, info , cost, allocted_job, not_exe_jobs
 
     def reset(self):
         self.seq_idx = 0

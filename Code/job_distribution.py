@@ -56,14 +56,24 @@ class Dist:
                 nw_size[i] = np.random.randint(self.other_res_lower,
                                                self.other_res_upper + 1)
 
+
+
         return nw_len, nw_size
 
     def bi_model_dist_anomalous(self):
 
-        mu_lenght = 1.5 
-        sigma_lenght = 0.4
-        mu_res = 1.9
-        sigma_res = 0.4 
+        # mu_lenght = 1.5 
+        # sigma_lenght = 0.4
+        mu_res = 1.5
+
+        #no anomalies
+        sigma_res = 0.2 
+
+        #mid anomalies
+        #sigma_res = 0.5 
+
+        #large anomalies
+
         
         # -- job length --
         if np.random.rand() < self.job_small_chance:  # small job
@@ -80,13 +90,23 @@ class Dist:
         for i in range(self.num_res):
             if i == dominant_res:
                 nw_size[i] = np.round(np.random.lognormal(mu_res, sigma_res, 1)).astype(int)
-
             else:
                 nw_size[i] = np.round(np.random.lognormal(mu_res, sigma_res, 1)).astype(int)
 
+
         return nw_len, nw_size    
 
+def print_info_about_jobs(pa,nw_len_seqs,nw_size_seqs):
+    count = 0
+    total = len(nw_size_seqs)
 
+    print pa.res_slot
+    for job in nw_size_seqs:
+        if np.any(job > pa.res_slot):
+            count += 1
+
+    percentage = (count / total) * 100
+    print "----------------------------------------percentage of anomalies : ", count,"/", total 
 
 def generate_sequence_work(pa, seed=42):
 
@@ -107,11 +127,16 @@ def generate_sequence_work(pa, seed=42):
 
             nw_len_seq[i], nw_size_seq[i, :] = nw_dist()
 
+    print_info_about_jobs(pa,nw_len_seq,nw_size_seq)
+
+
     nw_len_seq = np.reshape(nw_len_seq,
                             [pa.num_ex, pa.simu_len])
     nw_size_seq = np.reshape(nw_size_seq,
                              [pa.num_ex, pa.simu_len, pa.num_res])
-    
+        
+        
+
     #print nw_len_seq
     #print nw_size_seq
 

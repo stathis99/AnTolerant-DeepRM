@@ -9,7 +9,7 @@ class Parameters:
 
         self.output_filename = 'data/tmp'
 
-        self.num_epochs = 100 #10000         # number of training epochs
+        self.num_epochs = 800 #10000         # number of training epochs
         self.simu_len = 10             # length of the busy cycle that repeats itself
         self.num_ex = 1                # number of sequences
 
@@ -24,7 +24,7 @@ class Parameters:
         self.time_horizon = 20         # number of time steps in the graph
         self.max_job_len = 15          # maximum duration of new jobs
         self.res_slot = 10             # maximum number of available resource slots
-        self.res_slot_scaled = 30      # maximum number of available resource slots in the scaled system 
+        self.res_slot_scaled = 20      # maximum number of available resource slots in the scaled system 
         self.max_job_size = 10         # maximum resource request of new work
 
 

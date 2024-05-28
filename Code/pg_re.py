@@ -79,7 +79,7 @@ def get_traj(agent, env, episode_max_length):
         obs.append(ob)  # store the ob at current decision making step
         acts.append(a)
 
-        ob, rew, done, info, cost, alloc_job = env.step(a, repeat=True)
+        ob, rew, done, info, cost, alloc_job, not_exe_jobs = env.step(a, repeat=True)
 
         if len(alloc_job) > 0:
             allocated_jobs.append(alloc_job)
@@ -99,7 +99,8 @@ def get_traj(agent, env, episode_max_length):
             'entropy': entropy,
             'info': info,
             'cost':np.array(costs),
-            'allocated_jobs': np.array(allocated_jobs)
+            'allocated_jobs': np.array(allocated_jobs),
+            'not_exe_jobs': not_exe_jobs
             }
 
 
@@ -231,35 +232,42 @@ def get_traj_worker(pg_learner, env, pa, result):
 
 
     array_averages_cost = []
+    array_average_not_exe_jobs = []
     # Calculate the average for each array in trajs
     for traj in trajs:
         array_avg = sum(traj["cost"])
         array_averages_cost.append(array_avg)
+        array_average_not_exe_jobs.append(traj["not_exe_jobs"]) 
 
-    array_average_cloud_usage = []
-    array_average_anomalous_jobs_in_cloud = []
-    for traj in trajs: 
-        array_average_cloud_usage.append(calculate_percentages_machines(traj["allocated_jobs"]))
-        array_average_anomalous_jobs_in_cloud.append(calculate_percentages_anomalous_cloud(traj["allocated_jobs"]))
+
+    overall_avg_cloud_usage = 0
+    overall_avg_cloud_anomalous = 0
+    overall_avg_cost = 0 
+
+    overall_avg_not_exec =  sum(array_average_not_exe_jobs) / len(array_average_not_exe_jobs)
+
+    # array_average_cloud_usage = []
+    # array_average_anomalous_jobs_in_cloud = []
+    # for traj in trajs: 
+    #     array_average_cloud_usage.append(calculate_percentages_machines(traj["allocated_jobs"]))
+    #     array_average_anomalous_jobs_in_cloud.append(calculate_percentages_anomalous_cloud(traj["allocated_jobs"]))
         
+    # # Calculate the average of all the array averages
+    # if len(array_averages_cost) != 0:
+    #     overall_avg_cost = sum(array_averages_cost) / len(array_averages_cost)
+    # else:
+    #     overall_avg_cost = 0
 
+    # # Calculate the average of all the array averages
+    # if len(array_averages_cost) != 0:
+    #     overall_avg_cloud_usage = sum(array_average_cloud_usage) / len(array_average_cloud_usage)
+    # else:
+    #     overall_avg_cloud_usage = 0
 
-    # Calculate the average of all the array averages
-    if len(array_averages_cost) != 0:
-        overall_avg_cost = sum(array_averages_cost) / len(array_averages_cost)
-    else:
-        overall_avg_cost = 0
-
-    # Calculate the average of all the array averages
-    if len(array_averages_cost) != 0:
-        overall_avg_cloud_usage = sum(array_average_cloud_usage) / len(array_average_cloud_usage)
-    else:
-        overall_avg_cloud_usage = 0
-
-    if array_average_anomalous_jobs_in_cloud != 0:
-        overall_avg_cloud_anomalous = sum(array_average_anomalous_jobs_in_cloud) / len(array_average_anomalous_jobs_in_cloud)
-    else:
-        overall_avg_cloud_anomalous
+    # if array_average_anomalous_jobs_in_cloud != 0:
+    #     overall_avg_cloud_anomalous = sum(array_average_anomalous_jobs_in_cloud) / len(array_average_anomalous_jobs_in_cloud)
+    # else:
+    #     overall_avg_cloud_anomalous
     # Compute discounted sums of rewards
     rets = [discount(traj["reward"], pa.discount) for traj in trajs]
     maxlen = max(len(ret) for ret in rets)
@@ -293,7 +301,12 @@ def get_traj_worker(pg_learner, env, pa, result):
                    "avg_cost": overall_avg_cost,
                    "avg_cloud_usage": overall_avg_cloud_usage,
                    "avg_anomalous_cloud": overall_avg_cloud_anomalous,
+                   "avg_not_executed":overall_avg_not_exec,
                    })
+
+
+
+
 
 
 def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
@@ -306,6 +319,7 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
     envs = []
 
     nw_len_seqs, nw_size_seqs = job_distribution.generate_sequence_work(pa, seed=42)
+
 
     
 
@@ -345,7 +359,7 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
     cost_data = []
     all_avg_cloud_usage = []
     all_avg_anom_cloud = []
-
+    all_avg_not_exe_large = []
     # --------------------------------------
     print("Start training...")
     # --------------------------------------
@@ -369,7 +383,7 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
         all_slowdown = []
         all_entropy = []
         all_avg_cost = []
-
+        all_avg_not_exe_small = []
 
         ex_counter = 0
         for ex in xrange(pa.num_ex):
@@ -399,6 +413,7 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
 
                 ps = []
                 manager_result = manager.list([])
+                
 
                 all_ob = concatenate_all_ob_across_examples([r["all_ob"] for r in result], pa)
                 all_action = np.concatenate([r["all_action"] for r in result])
@@ -424,6 +439,8 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
                 all_cloud_usage = np.mean(r["avg_cloud_usage"])
 
                 all_anom_cloud = np.mean(r["avg_anomalous_cloud"])
+
+                all_avg_not_exe_small.append(r["avg_not_executed"])
 
         # assemble gradients
         grads = grads_all[0]
@@ -455,6 +472,8 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
         print "MeanCost \t %s" % (np.mean(all_avg_cost))
         print "Avg cloud usage \t %s" % (all_cloud_usage)
         print "Avg anom in cloud \t %s" % (all_anom_cloud)
+        print "Avg not exec \t %s" % (all_avg_not_exe_small)
+
         print "-----------------"
 
         timer_start = time.time()
@@ -465,6 +484,7 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
         cost_data.append(np.mean(all_avg_cost))
         all_avg_cloud_usage.append(all_cloud_usage)
         all_avg_anom_cloud.append(all_anom_cloud)
+        all_avg_not_exe_large.append(all_avg_not_exe_small[0])
 
 
         # save all in last iteration
@@ -505,6 +525,9 @@ def launch(pa, pg_resume=None, render=False, repre='image', end='no_new_job'):
 
             df_anom = pd.DataFrame(all_avg_anom_cloud, columns=['all_avg_anom_cloud'])
             df_anom.to_csv('data/all_avg_anom_cloud.csv', index=False)
+
+            df_not_exe = pd.DataFrame(all_avg_not_exe_large, columns=['all_avg_not_exe'])
+            df_not_exe.to_csv('data/all_avg_not_exec.csv', index=False)
 
 
 
