@@ -246,28 +246,28 @@ def get_traj_worker(pg_learner, env, pa, result):
 
     overall_avg_not_exec =  sum(array_average_not_exe_jobs) / len(array_average_not_exe_jobs)
 
-    # array_average_cloud_usage = []
-    # array_average_anomalous_jobs_in_cloud = []
-    # for traj in trajs: 
-    #     array_average_cloud_usage.append(calculate_percentages_machines(traj["allocated_jobs"]))
-    #     array_average_anomalous_jobs_in_cloud.append(calculate_percentages_anomalous_cloud(traj["allocated_jobs"]))
+    array_average_cloud_usage = []
+    array_average_anomalous_jobs_in_cloud = []
+    for traj in trajs: 
+        array_average_cloud_usage.append(calculate_percentages_machines(traj["allocated_jobs"]))
+        array_average_anomalous_jobs_in_cloud.append(calculate_percentages_anomalous_cloud(traj["allocated_jobs"]))
         
-    # # Calculate the average of all the array averages
-    # if len(array_averages_cost) != 0:
-    #     overall_avg_cost = sum(array_averages_cost) / len(array_averages_cost)
-    # else:
-    #     overall_avg_cost = 0
+    # Calculate the average of all the array averages
+    if len(array_averages_cost) != 0:
+        overall_avg_cost = sum(array_averages_cost) / len(array_averages_cost)
+    else:
+        overall_avg_cost = 0
 
-    # # Calculate the average of all the array averages
-    # if len(array_averages_cost) != 0:
-    #     overall_avg_cloud_usage = sum(array_average_cloud_usage) / len(array_average_cloud_usage)
-    # else:
-    #     overall_avg_cloud_usage = 0
+    # Calculate the average of all the array averages
+    if len(array_averages_cost) != 0:
+        overall_avg_cloud_usage = sum(array_average_cloud_usage) / len(array_average_cloud_usage)
+    else:
+        overall_avg_cloud_usage = 0
 
-    # if array_average_anomalous_jobs_in_cloud != 0:
-    #     overall_avg_cloud_anomalous = sum(array_average_anomalous_jobs_in_cloud) / len(array_average_anomalous_jobs_in_cloud)
-    # else:
-    #     overall_avg_cloud_anomalous
+    if array_average_anomalous_jobs_in_cloud != 0:
+        overall_avg_cloud_anomalous = sum(array_average_anomalous_jobs_in_cloud) / len(array_average_anomalous_jobs_in_cloud)
+    else:
+        overall_avg_cloud_anomalous
     # Compute discounted sums of rewards
     rets = [discount(traj["reward"], pa.discount) for traj in trajs]
     maxlen = max(len(ret) for ret in rets)

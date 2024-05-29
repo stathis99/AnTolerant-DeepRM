@@ -229,9 +229,11 @@ class Env:
             reward += self.pa.delay_penalty / float(j.len)
 
         # Deep_rm cloud
-        # for j in self.machine_scaled.running_job:
-        #     reward += self.pa.delay_penalty / float(j.len)
-        #     reward += self.pa.scale_penalty
+        for j in self.machine_scaled.running_job:
+            reward += self.pa.delay_penalty / float(j.len)
+            #if j.res_vec[0] < 10 or j.res_vec[1] < 10:
+            #    reward += self.pa.scale_penalty
+            #reward += self.pa.scale_penalty
 
 
         for j in self.job_slot.slot:
