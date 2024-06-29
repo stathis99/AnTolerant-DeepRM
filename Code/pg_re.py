@@ -239,7 +239,7 @@ def get_traj_worker(pg_learner, env, pa, result):
         array_averages_cost.append(array_avg)
         array_average_not_exe_jobs.append(traj["not_exe_jobs"]) 
 
-
+    
     overall_avg_cloud_usage = 0
     overall_avg_cloud_anomalous = 0
     overall_avg_cost = 0 
